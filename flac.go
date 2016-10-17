@@ -22,7 +22,6 @@
 package flac
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -43,10 +42,12 @@ type Stream struct {
 	// Zero or more metadata blocks.
 	Blocks []*meta.Block
 	// Underlying io.Reader.
-	r io.Reader
+	r io.ReadSeeker
 	// Underlying io.Closer of file if opened with Open and ParseFile, and nil
 	// otherwise.
 	c io.Closer
+	// Used for Seek.
+	FirstFrameHeader int64
 }
 
 // New creates a new Stream for accessing the audio samples of r. It reads and
@@ -55,10 +56,9 @@ type Stream struct {
 //
 // Call Stream.Next to parse the frame header of the next audio frame, and call
 // Stream.ParseNext to parse the entire next frame including audio samples.
-func New(r io.Reader) (stream *Stream, err error) {
+func New(r io.ReadSeeker) (stream *Stream, err error) {
 	// Verify FLAC signature and parse the StreamInfo metadata block.
-	br := bufio.NewReader(r)
-	stream = &Stream{r: br}
+	stream = &Stream{r: r}
 	isLast, err := stream.parseStreamInfo()
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func New(r io.Reader) (stream *Stream, err error) {
 
 	// Skip the remaining metadata blocks.
 	for !isLast {
-		block, err := meta.New(br)
+		block, err := meta.New(r)
 		if err != nil && err != meta.ErrReservedType {
 			return stream, err
 		}
@@ -116,10 +116,9 @@ func (stream *Stream) parseStreamInfo() (isLast bool, err error) {
 //
 // Call Stream.Next to parse the frame header of the next audio frame, and call
 // Stream.ParseNext to parse the entire next frame including audio samples.
-func Parse(r io.Reader) (stream *Stream, err error) {
+func Parse(r io.ReadSeeker) (stream *Stream, err error) {
 	// Verify FLAC signature and parse the StreamInfo metadata block.
-	br := bufio.NewReader(r)
-	stream = &Stream{r: br}
+	stream = &Stream{r: r}
 	isLast, err := stream.parseStreamInfo()
 	if err != nil {
 		return nil, err
@@ -127,7 +126,7 @@ func Parse(r io.Reader) (stream *Stream, err error) {
 
 	// Parse the remaining metadata blocks.
 	for !isLast {
-		block, err := meta.Parse(br)
+		block, err := meta.Parse(r)
 		if err != nil {
 			if err != meta.ErrReservedType {
 				return stream, err
@@ -144,6 +143,14 @@ func Parse(r io.Reader) (stream *Stream, err error) {
 		isLast = block.IsLast
 	}
 
+	pos, err := r.Seek(0, io.SeekCurrent)
+	if err != nil {
+		return nil, err
+	}
+	stream.FirstFrameHeader = pos
+	if _, err = r.Seek(pos, io.SeekStart); err != nil {
+		return nil, err
+	}
 	return stream, nil
 }
 
@@ -214,5 +221,5 @@ func (stream *Stream) ParseNext() (f *frame.Frame, err error) {
 
 // Seek is not implement yet.
 func (stream *Stream) Seek(offset int64, whence int) (read int64, err error) {
-	return 0, nil
+	return stream.r.Seek(offset, whence)
 }
