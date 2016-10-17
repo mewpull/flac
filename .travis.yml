@@ -16,7 +16,7 @@ before_install:
   - go get github.com/golang/lint/golint
   - go get github.com/mattn/goveralls
   - sudo apt-get -qq update
-  - sudo apt-get -y libpulse-dev
+  - sudo apt-get -y install libpulse-dev
 
 install:
   - go get ./...
