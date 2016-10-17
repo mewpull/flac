@@ -85,7 +85,7 @@ func play(filename string) (err error) {
 		}
 	}
 
-	ss := pulse.SampleSpec{sf, stream.Info.SampleRate, stream.Info.NChannels}
+	ss := pulse.SampleSpec{Format: sf, Rate: stream.Info.SampleRate, Channels: stream.Info.NChannels}
 	pb, err := initPulse(&ss)
 	if err != nil {
 		return err
@@ -157,12 +157,12 @@ func intSolution(pb *pulse.Stream, stream *flac.Stream, size int) {
 			}
 		}
 		if stream.Info.BitsPerSample == 24 {
-			for j, _ := range frame.Subframes[0].Samples {
+			for j := range frame.Subframes[0].Samples {
 				binary.BigEndian.PutUint32(tmp, uint32(frame.Subframes[0].Samples[j]))
 				data = append(data, tmp...)
 			}
 		} else {
-			for j, _ := range frame.Subframes[0].Samples {
+			for j := range frame.Subframes[0].Samples {
 				binary.BigEndian.PutUint32(tmp, uint32(frame.Subframes[0].Samples[j]))
 				data = append(data, tmp...)
 				binary.BigEndian.PutUint32(tmp, uint32(frame.Subframes[1].Samples[j]))
