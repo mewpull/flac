@@ -46,8 +46,8 @@ type Stream struct {
 	// Underlying io.Closer of file if opened with Open and ParseFile, and nil
 	// otherwise.
 	c io.Closer
-	// Used for Seek.
-	FirstFrameHeader int64
+	// Byte offset to first frame header; used for seeking.
+	firstFrameHeader int64
 }
 
 // New creates a new Stream for accessing the audio samples of r. It reads and
@@ -147,7 +147,7 @@ func Parse(r io.ReadSeeker) (stream *Stream, err error) {
 	if err != nil {
 		return nil, err
 	}
-	stream.FirstFrameHeader = pos
+	stream.firstFrameHeader = pos
 	if _, err = r.Seek(pos, io.SeekStart); err != nil {
 		return nil, err
 	}
@@ -219,7 +219,69 @@ func (stream *Stream) ParseNext() (f *frame.Frame, err error) {
 	return frame.Parse(stream.r)
 }
 
-// Seek is not implement yet.
-func (stream *Stream) Seek(offset int64, whence int) (read int64, err error) {
-	return stream.r.Seek(offset, whence)
+// Seek seeks to the audio frame containing the specified sample number.
+func (stream *Stream) Seek(offset int64, whence int) error {
+	// Calculate target sample number.
+	nsamples := int64(stream.Info.NSamples)
+	var sample int64
+	switch whence {
+	case io.SeekStart:
+		sample = 0 + offset
+	case io.SeekCurrent:
+		frame, err := stream.ParseNext()
+		if err != nil {
+			return err
+		}
+		var cur int64
+		if frame.HasFixedBlockSize {
+			cur = int64(frame.Num) * int64(frame.BlockSize)
+		} else {
+			cur = int64(frame.Num)
+		}
+		sample = cur + offset
+		fmt.Println("current sample:", cur)
+	case io.SeekEnd:
+		sample = nsamples + offset
+	default:
+		panic(fmt.Errorf("unknown whence %d", whence))
+	}
+	if sample < 0 {
+		sample = 0
+	}
+	if sample > nsamples {
+		sample = nsamples
+	}
+	fmt.Println("seeking after sample:", sample)
+	// Seek to target sample number.
+	if _, err := stream.r.Seek(stream.firstFrameHeader, io.SeekStart); err != nil {
+		return err
+	}
+	i := int64(0)
+	for {
+		frame, err := stream.ParseNext()
+		if err != nil {
+			return err
+		}
+		var sampleStart, sampleEnd int64
+		// frame.Num specifies the frame number if the block size is fixed, and
+		// the first sample number in the frame otherwise.
+		if frame.HasFixedBlockSize {
+			sampleStart = int64(frame.Num) * int64(frame.BlockSize)
+		} else {
+			sampleStart = int64(frame.Num)
+		}
+		sampleEnd = sampleStart + int64(frame.BlockSize)
+		if sample >= sampleStart && sample < sampleEnd {
+			break
+		}
+		i += int64(frame.BlockSize)
+	}
+	return nil
 }
+
+// TODO: Consider changing the signature of Seek to:
+//    func (stream *Stream) Seek(sample, whence int) error
+
+// , relative to whence: io.SeekStart means relative to the start of the audio
+// stream, io.SeekCurrent means relative to the current sample, and io.SeekEnd
+// means relative to the end of the audio stream.
