@@ -27,6 +27,7 @@ import (
 
 	"github.com/mewkiz/flac"
 	"github.com/mewkiz/flac/meta"
+	"github.com/pkg/errors"
 )
 
 // flagBlockNum contains an optional comma-separated list of block numbers to
@@ -67,7 +68,7 @@ func list(path string) error {
 		for _, rawBlockNum := range rawBlockNums {
 			blockNum, err := strconv.Atoi(rawBlockNum)
 			if err != nil {
-				return err
+				return errors.WithStack(err)
 			}
 			blockNums = append(blockNums, blockNum)
 		}
@@ -76,7 +77,7 @@ func list(path string) error {
 	// Open FLAC stream.
 	stream, err := flac.ParseFile(path)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	if blockNums != nil {

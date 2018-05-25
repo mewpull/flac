@@ -11,6 +11,8 @@ import (
 	"io"
 	"math/rand"
 	"testing"
+
+	"github.com/pkg/errors"
 )
 
 func TestRead(t *testing.T) {

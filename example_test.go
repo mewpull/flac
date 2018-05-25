@@ -8,6 +8,7 @@ import (
 	"log"
 
 	"github.com/mewkiz/flac"
+	"github.com/pkg/errors"
 )
 
 func ExampleParseFile() {

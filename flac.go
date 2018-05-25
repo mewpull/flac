@@ -134,23 +134,23 @@ func (stream *Stream) skipID3v2() error {
 
 	// Discard unnecessary data from the ID3v2 header.
 	if _, err := r.Discard(2); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	// Read the size from the ID3v2 header.
 	var sizeBuf [4]byte
 	if _, err := r.Read(sizeBuf[:]); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	// The size is encoded as a synchsafe integer.
 	size, err := encodedbytes.SynchInt(sizeBuf[:])
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	_, err = r.Discard(int(size))
-	return err
+	return errors.WithStack(err)
 }
 
 // Parse creates a new Stream for accessing the metadata blocks and audio

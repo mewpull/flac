@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/mewkiz/flac"
+	"github.com/pkg/errors"
 )
 
 var golden = []struct {

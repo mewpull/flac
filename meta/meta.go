@@ -110,10 +110,10 @@ func (block *Block) Parse() error {
 func (block *Block) Skip() error {
 	if sr, ok := block.lr.(io.Seeker); ok {
 		_, err := sr.Seek(0, os.SEEK_END)
-		return err
+		return errors.WithStack(err)
 	}
 	_, err := io.Copy(ioutil.Discard, block.lr)
-	return err
+	return errors.WithStack(err)
 }
 
 // A Header contains information about the type and length of a metadata block.
@@ -142,7 +142,7 @@ func (block *Block) parseHeader(r io.Reader) error {
 		// after the last metadata block. Therefore an io.EOF error at this
 		// location is always invalid. This logic is to be handled by the flac
 		// package however.
-		return err
+		return errors.WithStack(err)
 	}
 	if x != 0 {
 		block.IsLast = true
@@ -206,5 +206,5 @@ func unexpected(err error) error {
 	if err == io.EOF {
 		return io.ErrUnexpectedEOF
 	}
-	return err
+	return errors.WithStack(err)
 }

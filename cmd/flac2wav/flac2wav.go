@@ -19,6 +19,7 @@ import (
 	"github.com/mewkiz/flac"
 	"github.com/mewkiz/pkg/osutil"
 	"github.com/mewkiz/pkg/pathutil"
+	"github.com/pkg/errors"
 )
 
 // flagForce specifies if file overwriting should be forced, when a WAV file of
@@ -44,7 +45,7 @@ func flac2wav(path string) error {
 	// Open FLAC file.
 	stream, err := flac.Open(path)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	defer stream.Close()
 
@@ -57,7 +58,7 @@ func flac2wav(path string) error {
 	}
 	fw, err := os.Create(wavPath)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	defer fw.Close()
 
@@ -68,7 +69,7 @@ func flac2wav(path string) error {
 	}
 	enc, err := wav.NewEncoder(fw, conf)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	defer enc.Close()
 
@@ -79,7 +80,7 @@ func flac2wav(path string) error {
 			if err == io.EOF {
 				break
 			}
-			return err
+			return errors.WithStack(err)
 		}
 
 		// Encode WAV audio samples.
@@ -89,7 +90,7 @@ func flac2wav(path string) error {
 				samples[0] = int16(subframe.Samples[i])
 				_, err = enc.Write(samples)
 				if err != nil {
-					return err
+					return errors.WithStack(err)
 				}
 			}
 		}

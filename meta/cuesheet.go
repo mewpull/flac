@@ -62,7 +62,7 @@ func (block *Block) parseCueSheet() error {
 	zr := zeros{r: lr}
 	_, err = io.Copy(ioutil.Discard, zr)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	// Parse cue sheet tracks.
@@ -149,7 +149,7 @@ func (block *Block) parseCueSheet() error {
 		zr = zeros{r: lr}
 		_, err = io.Copy(ioutil.Discard, zr)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 
 		// Parse indicies.
@@ -181,7 +181,7 @@ func (block *Block) parseCueSheet() error {
 			zr = zeros{r: lr}
 			_, err = io.Copy(ioutil.Discard, zr)
 			if err != nil {
-				return err
+				return errors.WithStack(err)
 			}
 		}
 	}

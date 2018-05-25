@@ -14,7 +14,7 @@ import (
 func (block *Block) verifyPadding() error {
 	zr := zeros{r: block.lr}
 	_, err := io.Copy(ioutil.Discard, zr)
-	return err
+	return errors.WithStack(err)
 }
 
 // Errors returned by zeros.Read.

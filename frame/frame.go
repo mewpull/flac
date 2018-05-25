@@ -122,7 +122,7 @@ func (frame *Frame) Parse() error {
 		// Parse subframe.
 		frame.Subframes[channel], err = frame.parseSubframe(bps)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 	}
 
@@ -221,7 +221,7 @@ func (frame *Frame) parseHeader() error {
 	if err != nil {
 		// This is the only place an audio frame may return io.EOF, which signals
 		// a graceful end of a FLAC stream.
-		return err
+		return errors.WithStack(err)
 	}
 	if x != 0x3FFE {
 		return ErrInvalidSync
@@ -593,5 +593,5 @@ func unexpected(err error) error {
 	if err == io.EOF {
 		return io.ErrUnexpectedEOF
 	}
-	return err
+	return errors.WithStack(err)
 }

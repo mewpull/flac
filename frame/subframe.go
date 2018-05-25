@@ -270,7 +270,7 @@ func (subframe *Subframe) decodeFixed(br *bits.Reader, bps uint) error {
 	// Decode subframe residuals.
 	err := subframe.decodeResidual(br)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	// Predict the audio samples of the subframe using a polynomial with
@@ -325,7 +325,7 @@ func (subframe *Subframe) decodeFIR(br *bits.Reader, bps uint) error {
 
 	// Decode subframe residuals.
 	if err = subframe.decodeResidual(br); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	// Predict the audio samples of the subframe using a polynomial with
@@ -420,7 +420,7 @@ func (subframe *Subframe) decodeRicePart(br *bits.Reader, paramSize uint) error 
 		// Decode the Rice encoded residuals of the partition.
 		for j := 0; j < nsamples; j++ {
 			if err = subframe.decodeRiceResidual(br, param); err != nil {
-				return err
+				return errors.WithStack(err)
 			}
 		}
 	}
