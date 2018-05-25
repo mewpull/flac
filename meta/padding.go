@@ -38,5 +38,5 @@ func (zr zeros) Read(p []byte) (n int, err error) {
 	}
 	// Note, not wrapping err in errors.WithStack as it will confuse io.Copy
 	// which is expecting io.EOF.
-	return n, err
+	return n, errors.Cause(err)
 }
