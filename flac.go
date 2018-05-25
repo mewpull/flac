@@ -63,17 +63,17 @@ func New(r io.Reader) (stream *Stream, err error) {
 	stream = &Stream{r: br}
 	isLast, err := stream.parseStreamInfo()
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	// Skip the remaining metadata blocks.
 	for !isLast {
 		block, err := meta.New(br)
 		if err != nil && err != meta.ErrReservedType {
-			return stream, err
+			return stream, errors.WithStack(err)
 		}
 		if err = block.Skip(); err != nil {
-			return stream, err
+			return stream, errors.WithStack(err)
 		}
 		isLast = block.IsLast
 	}
@@ -96,18 +96,18 @@ func (stream *Stream) parseStreamInfo() (isLast bool, err error) {
 	r := stream.r
 	var buf [4]byte
 	if _, err = io.ReadFull(r, buf[:]); err != nil {
-		return false, err
+		return false, errors.WithStack(err)
 	}
 
 	// Skip prepended ID3v2 data.
 	if bytes.Equal(buf[:3], id3Signature) {
 		if err := stream.skipID3v2(); err != nil {
-			return false, err
+			return false, errors.WithStack(err)
 		}
 
 		// Second attempt at verifying signature.
 		if _, err = io.ReadFull(r, buf[:]); err != nil {
-			return false, err
+			return false, errors.WithStack(err)
 		}
 	}
 
@@ -118,7 +118,7 @@ func (stream *Stream) parseStreamInfo() (isLast bool, err error) {
 	// Parse StreamInfo metadata block.
 	block, err := meta.Parse(r)
 	if err != nil {
-		return false, err
+		return false, errors.WithStack(err)
 	}
 	si, ok := block.Body.(*meta.StreamInfo)
 	if !ok {
@@ -164,7 +164,7 @@ func Parse(r io.Reader) (stream *Stream, err error) {
 	stream = &Stream{r: br}
 	isLast, err := stream.parseStreamInfo()
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	// Parse the remaining metadata blocks.
@@ -172,14 +172,14 @@ func Parse(r io.Reader) (stream *Stream, err error) {
 		block, err := meta.Parse(br)
 		if err != nil {
 			if err != meta.ErrReservedType {
-				return stream, err
+				return stream, errors.WithStack(err)
 			}
 			// Skip the body of unknown (reserved) metadata blocks, as stated by
 			// the specification.
 			//
 			// ref: https://www.xiph.org/flac/format.html#format_overview
 			if err = block.Skip(); err != nil {
-				return stream, err
+				return stream, errors.WithStack(err)
 			}
 		}
 		stream.Blocks = append(stream.Blocks, block)
@@ -200,14 +200,14 @@ func Parse(r io.Reader) (stream *Stream, err error) {
 func Open(path string) (stream *Stream, err error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	stream, err = New(f)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	stream.c = f
-	return stream, err
+	return stream, errors.WithStack(err)
 }
 
 // ParseFile creates a new Stream for accessing the metadata blocks and audio
@@ -221,14 +221,14 @@ func Open(path string) (stream *Stream, err error) {
 func ParseFile(path string) (stream *Stream, err error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	stream, err = Parse(f)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	stream.c = f
-	return stream, err
+	return stream, errors.WithStack(err)
 }
 
 // Close closes the stream if opened through a call to Open or ParseFile, and

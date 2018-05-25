@@ -28,12 +28,12 @@
 package meta
 
 import (
-	"errors"
 	"io"
 	"io/ioutil"
 	"os"
 
 	"github.com/mewkiz/flac/internal/bits"
+	"github.com/pkg/errors"
 )
 
 // A Block contains the header and body of a metadata block.
@@ -57,7 +57,7 @@ type Block struct {
 func New(r io.Reader) (block *Block, err error) {
 	block = new(Block)
 	if err = block.parseHeader(r); err != nil {
-		return block, err
+		return block, errors.WithStack(err)
 	}
 	block.lr = io.LimitReader(r, block.Length)
 	return block, nil
@@ -68,10 +68,10 @@ func New(r io.Reader) (block *Block, err error) {
 func Parse(r io.Reader) (block *Block, err error) {
 	block, err = New(r)
 	if err != nil {
-		return block, err
+		return block, errors.WithStack(err)
 	}
 	if err = block.Parse(); err != nil {
-		return block, err
+		return block, errors.WithStack(err)
 	}
 	return block, nil
 }

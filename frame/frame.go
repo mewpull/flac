@@ -72,7 +72,7 @@ func New(r io.Reader) (frame *Frame, err error) {
 	// Parse frame header.
 	frame = &Frame{crc: crc, hr: hr, r: r}
 	err = frame.parseHeader()
-	return frame, err
+	return frame, errors.WithStack(err)
 }
 
 // Parse reads and parses the header, and the audio samples from each subframe
@@ -85,12 +85,12 @@ func Parse(r io.Reader) (frame *Frame, err error) {
 	// Parse frame header.
 	frame, err = New(r)
 	if err != nil {
-		return frame, err
+		return frame, errors.WithStack(err)
 	}
 
 	// Parse subframes.
 	err = frame.Parse()
-	return frame, err
+	return frame, errors.WithStack(err)
 }
 
 // Parse reads and parses the audio samples from each subframe of the frame. If

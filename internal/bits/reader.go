@@ -4,6 +4,8 @@ package bits
 import (
 	"fmt"
 	"io"
+
+	"github.com/pkg/errors"
 )
 
 // A Reader handles bit reading operations. It buffers bits up to the next byte
@@ -60,7 +62,7 @@ func (br *Reader) Read(n uint) (x uint64, err error) {
 	}
 	_, err = io.ReadFull(br.r, br.buf[:bytes])
 	if err != nil {
-		return 0, err
+		return 0, errors.WithStack(err)
 	}
 
 	// Read bits from the temporary buffer.

@@ -1,9 +1,10 @@
 package meta
 
 import (
-	"errors"
 	"io"
 	"io/ioutil"
+
+	"github.com/pkg/errors"
 )
 
 // verifyPadding verifies the body of a Padding metadata block. It should only
@@ -35,5 +36,5 @@ func (zr zeros) Read(p []byte) (n int, err error) {
 			return n, ErrInvalidPadding
 		}
 	}
-	return n, err
+	return n, errors.WithStack(err)
 }

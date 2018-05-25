@@ -1,6 +1,10 @@
 package meta
 
-import "io"
+import (
+	"io"
+
+	"github.com/pkg/errors"
+)
 
 // readBuf is the local buffer used by readBytes.
 var readBuf = make([]byte, 4096)
@@ -20,7 +24,7 @@ func readBytes(r io.Reader, n int) ([]byte, error) {
 	}
 	_, err := io.ReadFull(r, readBuf[:n])
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	return readBuf[:n:n], nil
 }

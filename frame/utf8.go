@@ -59,7 +59,7 @@ const (
 func decodeUTF8Int(r io.Reader) (n uint64, err error) {
 	c0, err := readByte(r)
 	if err != nil {
-		return 0, err
+		return 0, errors.WithStack(err)
 	}
 
 	// 1-byte, 7-bit sequence?
@@ -126,7 +126,7 @@ func decodeUTF8Int(r io.Reader) (n uint64, err error) {
 			if err == io.EOF {
 				return 0, io.ErrUnexpectedEOF
 			}
-			return 0, err
+			return 0, errors.WithStack(err)
 		}
 		if c < tx || t2 <= c {
 			// if c != 10xxxxxx
@@ -171,7 +171,7 @@ func readByte(r io.Reader) (c byte, err error) {
 	buf := make([]byte, 1)
 	_, err = io.ReadFull(r, buf)
 	if err != nil {
-		return 0, err
+		return 0, errors.WithStack(err)
 	}
 	return buf[0], nil
 }

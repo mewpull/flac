@@ -31,7 +31,7 @@ func (frame *Frame) parseSubframe(bps uint) (subframe *Subframe, err error) {
 	// Parse subframe header.
 	subframe = new(Subframe)
 	if err = subframe.parseHeader(frame.br); err != nil {
-		return subframe, err
+		return subframe, errors.WithStack(err)
 	}
 	// Adjust bps of subframe for wasted bits-per-sample.
 	bps -= subframe.Wasted
@@ -55,7 +55,7 @@ func (frame *Frame) parseSubframe(bps uint) (subframe *Subframe, err error) {
 		subframe.Samples[i] = sample << subframe.Wasted
 	}
 
-	return subframe, err
+	return subframe, errors.WithStack(err)
 }
 
 // A SubHeader specifies the prediction method and order of a subframe.

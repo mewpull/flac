@@ -1,5 +1,7 @@
 package bits
 
+import "github.com/pkg/errors"
+
 // ReadUnary decodes and returns an unary coded integer, whose value is
 // represented by the number of leading zeros before a one.
 //
@@ -16,7 +18,7 @@ func (br *Reader) ReadUnary() (x uint64, err error) {
 	for {
 		bit, err := br.Read(1)
 		if err != nil {
-			return 0, err
+			return 0, errors.WithStack(err)
 		}
 		if bit == 1 {
 			break
