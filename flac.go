@@ -24,12 +24,12 @@ package flac
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 
 	"github.com/mewkiz/flac/frame"
 	"github.com/mewkiz/flac/meta"
+	"github.com/pkg/errors"
 
 	"github.com/mikkyang/id3-go/encodedbytes"
 )
@@ -112,7 +112,7 @@ func (stream *Stream) parseStreamInfo() (isLast bool, err error) {
 	}
 
 	if !bytes.Equal(buf[:], flacSignature) {
-		return false, fmt.Errorf("flac.parseStreamInfo: invalid FLAC signature; expected %q, got %q", flacSignature, buf)
+		return false, errors.Errorf("flac.parseStreamInfo: invalid FLAC signature; expected %q, got %q", flacSignature, buf)
 	}
 
 	// Parse StreamInfo metadata block.
@@ -122,7 +122,7 @@ func (stream *Stream) parseStreamInfo() (isLast bool, err error) {
 	}
 	si, ok := block.Body.(*meta.StreamInfo)
 	if !ok {
-		return false, fmt.Errorf("flac.parseStreamInfo: incorrect type of first metadata block; expected *meta.StreamInfo, got %T", si)
+		return false, errors.Errorf("flac.parseStreamInfo: incorrect type of first metadata block; expected *meta.StreamInfo, got %T", si)
 	}
 	stream.Info = si
 	return block.IsLast, nil

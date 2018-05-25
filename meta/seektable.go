@@ -2,8 +2,8 @@ package meta
 
 import (
 	"encoding/binary"
-	"errors"
-	"fmt"
+
+	"github.com/pkg/errors"
 )
 
 // SeekTable contains one or more pre-calculated audio frame seek points.
@@ -38,9 +38,9 @@ func (block *Block) parseSeekTable() error {
 		if i != 0 && sampleNum != PlaceholderPoint {
 			switch {
 			case sampleNum < prev:
-				return fmt.Errorf("meta.Block.parseSeekTable: invalid seek point order; sample number (%d) < prev (%d)", sampleNum, prev)
+				return errors.Errorf("meta.Block.parseSeekTable: invalid seek point order; sample number (%d) < prev (%d)", sampleNum, prev)
 			case sampleNum == prev:
-				return fmt.Errorf("meta.Block.parseSeekTable: duplicate seek point with sample number (%d)", sampleNum)
+				return errors.Errorf("meta.Block.parseSeekTable: duplicate seek point with sample number (%d)", sampleNum)
 			}
 		}
 	}

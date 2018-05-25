@@ -27,8 +27,6 @@ package frame
 
 import (
 	"encoding/binary"
-	"errors"
-	"fmt"
 	"hash"
 	"io"
 	"log"
@@ -37,6 +35,7 @@ import (
 	"github.com/mewkiz/flac/internal/hashutil"
 	"github.com/mewkiz/flac/internal/hashutil/crc16"
 	"github.com/mewkiz/flac/internal/hashutil/crc8"
+	"github.com/pkg/errors"
 )
 
 // A Frame contains the header and subframes of an audio frame. It holds the
@@ -137,7 +136,7 @@ func (frame *Frame) Parse() error {
 	}
 	got := frame.crc.Sum16()
 	if got != want {
-		return fmt.Errorf("frame.Frame.Parse: CRC-16 checksum mismatch; expected %v, got %v", want, got)
+		return errors.Errorf("frame.Frame.Parse: CRC-16 checksum mismatch; expected %v, got %v", want, got)
 	}
 
 	return nil
@@ -283,7 +282,7 @@ func (frame *Frame) parseHeader() error {
 		return unexpected(err)
 	}
 	if x >= 0xB {
-		return fmt.Errorf("frame.Frame.parseHeader: reserved channels bit pattern (%04b)", x)
+		return errors.Errorf("frame.Frame.parseHeader: reserved channels bit pattern (%04b)", x)
 	}
 	frame.Channels = Channels(x)
 
@@ -326,7 +325,7 @@ func (frame *Frame) parseHeader() error {
 	default:
 		// 011: reserved.
 		// 111: reserved.
-		return fmt.Errorf("frame.Frame.parseHeader: reserved sample size bit pattern (%03b)", x)
+		return errors.Errorf("frame.Frame.parseHeader: reserved sample size bit pattern (%03b)", x)
 	}
 
 	// 1 bit: reserved.
@@ -484,7 +483,7 @@ func (frame *Frame) parseHeader() error {
 	}
 	got := h.Sum8()
 	if got != want {
-		return fmt.Errorf("frame.Frame.parseHeader: CRC-8 checksum mismatch; expected %v, got %v", want, got)
+		return errors.Errorf("frame.Frame.parseHeader: CRC-8 checksum mismatch; expected %v, got %v", want, got)
 	}
 
 	return nil

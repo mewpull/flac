@@ -1,11 +1,10 @@
 package frame
 
 import (
-	"errors"
-	"fmt"
 	"log"
 
 	"github.com/mewkiz/flac/internal/bits"
+	"github.com/pkg/errors"
 )
 
 // A Subframe contains the encoded audio samples from one channel of an audio
@@ -110,7 +109,7 @@ func (subframe *Subframe) parseHeader(br *bits.Reader) error {
 	case x < 8:
 		// 00001x: reserved.
 		// 0001xx: reserved.
-		return fmt.Errorf("frame.Subframe.parseHeader: reserved prediction method bit pattern (%06b)", x)
+		return errors.Errorf("frame.Subframe.parseHeader: reserved prediction method bit pattern (%06b)", x)
 	case x < 16:
 		// 001xxx:
 		//    if (xxx <= 4)
@@ -119,13 +118,13 @@ func (subframe *Subframe) parseHeader(br *bits.Reader) error {
 		//       reserved.
 		order := int(x & 0x07)
 		if order > 4 {
-			return fmt.Errorf("frame.Subframe.parseHeader: reserved prediction method bit pattern (%06b)", x)
+			return errors.Errorf("frame.Subframe.parseHeader: reserved prediction method bit pattern (%06b)", x)
 		}
 		subframe.Pred = PredFixed
 		subframe.Order = order
 	case x < 32:
 		// 01xxxx: reserved.
-		return fmt.Errorf("frame.Subframe.parseHeader: reserved prediction method bit pattern (%06b)", x)
+		return errors.Errorf("frame.Subframe.parseHeader: reserved prediction method bit pattern (%06b)", x)
 	default:
 		// 1xxxxx: FIR prediction method; xxxxx=order-1
 		subframe.Pred = PredFIR
@@ -356,7 +355,7 @@ func (subframe *Subframe) decodeResidual(br *bits.Reader) error {
 	case 0x1:
 		return subframe.decodeRicePart(br, 5)
 	default:
-		return fmt.Errorf("frame.Subframe.decodeResidual: reserved residual coding method bit pattern (%02b)", x)
+		return errors.Errorf("frame.Subframe.decodeResidual: reserved residual coding method bit pattern (%02b)", x)
 	}
 }
 
@@ -456,10 +455,10 @@ func (subframe *Subframe) decodeRiceResidual(br *bits.Reader, k uint) error {
 // and the signal errors of the prediction as specified by the residuals.
 func (subframe *Subframe) decodeLPC(coeffs []int32, shift int32) error {
 	if len(coeffs) != subframe.Order {
-		return fmt.Errorf("frame.Subframe.decodeLPC: prediction order (%d) differs from number of coefficients (%d)", subframe.Order, len(coeffs))
+		return errors.Errorf("frame.Subframe.decodeLPC: prediction order (%d) differs from number of coefficients (%d)", subframe.Order, len(coeffs))
 	}
 	if shift < 0 {
-		return fmt.Errorf("frame.Subframe.decodeLPC: invalid negative shift")
+		return errors.Errorf("frame.Subframe.decodeLPC: invalid negative shift")
 	}
 	for i := subframe.Order; i < subframe.NSamples; i++ {
 		var sample int64

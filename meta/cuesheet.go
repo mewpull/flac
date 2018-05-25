@@ -3,10 +3,10 @@ package meta
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
+
+	"github.com/pkg/errors"
 )
 
 // A CueSheet describes how tracks are laid out within a FLAC stream.
@@ -74,7 +74,7 @@ func (block *Block) parseCueSheet() error {
 		return errors.New("meta.Block.parseCueSheet: at least one track required")
 	}
 	if cs.IsCompactDisc && x > 100 {
-		return fmt.Errorf("meta.Block.parseCueSheet: number of CD-DA tracks (%d) exceeds 100", x)
+		return errors.Errorf("meta.Block.parseCueSheet: number of CD-DA tracks (%d) exceeds 100", x)
 	}
 	cs.Tracks = make([]CueSheetTrack, x)
 	// Each track number within a cue sheet must be unique; use uniq to keep
@@ -87,7 +87,7 @@ func (block *Block) parseCueSheet() error {
 			return unexpected(err)
 		}
 		if cs.IsCompactDisc && track.Offset%588 != 0 {
-			return fmt.Errorf("meta.Block.parseCueSheet: CD-DA track offset (%d) must be evenly divisible by 588", track.Offset)
+			return errors.Errorf("meta.Block.parseCueSheet: CD-DA track offset (%d) must be evenly divisible by 588", track.Offset)
 		}
 
 		// 8 bits: Num.
@@ -95,7 +95,7 @@ func (block *Block) parseCueSheet() error {
 			return unexpected(err)
 		}
 		if _, ok := uniq[track.Num]; ok {
-			return fmt.Errorf("meta.Block.parseCueSheet: duplicated track number %d", track.Num)
+			return errors.Errorf("meta.Block.parseCueSheet: duplicated track number %d", track.Num)
 		}
 		uniq[track.Num] = struct{}{}
 		if track.Num == 0 {
@@ -105,16 +105,16 @@ func (block *Block) parseCueSheet() error {
 		if cs.IsCompactDisc {
 			if !isLeadOut {
 				if track.Num >= 100 {
-					return fmt.Errorf("meta.Block.parseCueSheet: CD-DA track number (%d) exceeds 99", track.Num)
+					return errors.Errorf("meta.Block.parseCueSheet: CD-DA track number (%d) exceeds 99", track.Num)
 				}
 			} else {
 				if track.Num != 170 {
-					return fmt.Errorf("meta.Block.parseCueSheet: invalid lead-out CD-DA track number; expected 170, got %d", track.Num)
+					return errors.Errorf("meta.Block.parseCueSheet: invalid lead-out CD-DA track number; expected 170, got %d", track.Num)
 				}
 			}
 		} else {
 			if isLeadOut && track.Num != 255 {
-				return fmt.Errorf("meta.Block.parseCueSheet: invalid lead-out track number; expected 255, got %d", track.Num)
+				return errors.Errorf("meta.Block.parseCueSheet: invalid lead-out track number; expected 255, got %d", track.Num)
 			}
 		}
 

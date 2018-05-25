@@ -2,8 +2,9 @@ package meta
 
 import (
 	"encoding/binary"
-	"fmt"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // VorbisComment contains a list of name-value pairs.
@@ -60,7 +61,7 @@ func (block *Block) parseVorbisComment() (err error) {
 		//    NAME=VALUE
 		pos := strings.Index(vector, "=")
 		if pos == -1 {
-			return fmt.Errorf("meta.Block.parseVorbisComment: unable to locate '=' in vector %q", vector)
+			return errors.Errorf("meta.Block.parseVorbisComment: unable to locate '=' in vector %q", vector)
 		}
 		comment.Tags[i][0] = vector[:pos]
 		comment.Tags[i][1] = vector[pos+1:]

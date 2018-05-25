@@ -1,10 +1,10 @@
 package frame
 
 import (
-	"errors"
-	"fmt"
 	"io"
 	"log"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -139,27 +139,27 @@ func decodeUTF8Int(r io.Reader) (n uint64, err error) {
 	switch l {
 	case 1:
 		if n <= rune1Max {
-			return 0, fmt.Errorf("frame.decodeUTF8Int: larger number representation than necessary; n (%d) stored in %d bytes, could be stored in %d bytes", n, l+1, l)
+			return 0, errors.Errorf("frame.decodeUTF8Int: larger number representation than necessary; n (%d) stored in %d bytes, could be stored in %d bytes", n, l+1, l)
 		}
 	case 2:
 		if n <= rune2Max {
-			return 0, fmt.Errorf("frame.decodeUTF8Int: larger number representation than necessary; n (%d) stored in %d bytes, could be stored in %d bytes", n, l+1, l)
+			return 0, errors.Errorf("frame.decodeUTF8Int: larger number representation than necessary; n (%d) stored in %d bytes, could be stored in %d bytes", n, l+1, l)
 		}
 	case 3:
 		if n <= rune3Max {
-			return 0, fmt.Errorf("frame.decodeUTF8Int: larger number representation than necessary; n (%d) stored in %d bytes, could be stored in %d bytes", n, l+1, l)
+			return 0, errors.Errorf("frame.decodeUTF8Int: larger number representation than necessary; n (%d) stored in %d bytes, could be stored in %d bytes", n, l+1, l)
 		}
 	case 4:
 		if n <= rune4Max {
-			return 0, fmt.Errorf("frame.decodeUTF8Int: larger number representation than necessary; n (%d) stored in %d bytes, could be stored in %d bytes", n, l+1, l)
+			return 0, errors.Errorf("frame.decodeUTF8Int: larger number representation than necessary; n (%d) stored in %d bytes, could be stored in %d bytes", n, l+1, l)
 		}
 	case 5:
 		if n <= rune5Max {
-			return 0, fmt.Errorf("frame.decodeUTF8Int: larger number representation than necessary; n (%d) stored in %d bytes, could be stored in %d bytes", n, l+1, l)
+			return 0, errors.Errorf("frame.decodeUTF8Int: larger number representation than necessary; n (%d) stored in %d bytes, could be stored in %d bytes", n, l+1, l)
 		}
 	case 6:
 		if n <= rune6Max {
-			return 0, fmt.Errorf("frame.decodeUTF8Int: larger number representation than necessary; n (%d) stored in %d bytes, could be stored in %d bytes", n, l+1, l)
+			return 0, errors.Errorf("frame.decodeUTF8Int: larger number representation than necessary; n (%d) stored in %d bytes, could be stored in %d bytes", n, l+1, l)
 		}
 	}
 

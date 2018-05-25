@@ -2,11 +2,10 @@ package meta
 
 import (
 	"crypto/md5"
-	"errors"
-	"fmt"
 	"io"
 
 	"github.com/mewkiz/flac/internal/bits"
+	"github.com/pkg/errors"
 )
 
 // StreamInfo contains the basic properties of a FLAC audio stream, such as its
@@ -48,7 +47,7 @@ func (block *Block) parseStreamInfo() error {
 		return unexpected(err)
 	}
 	if x < 16 {
-		return fmt.Errorf("meta.Block.parseStreamInfo: invalid minimum block size (%d); expected >= 16", x)
+		return errors.Errorf("meta.Block.parseStreamInfo: invalid minimum block size (%d); expected >= 16", x)
 	}
 	si := new(StreamInfo)
 	block.Body = si
@@ -60,7 +59,7 @@ func (block *Block) parseStreamInfo() error {
 		return unexpected(err)
 	}
 	if x < 16 {
-		return fmt.Errorf("meta.Block.parseStreamInfo: invalid maximum block size (%d); expected >= 16", x)
+		return errors.Errorf("meta.Block.parseStreamInfo: invalid maximum block size (%d); expected >= 16", x)
 	}
 	si.BlockSizeMax = uint16(x)
 
