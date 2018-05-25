@@ -123,7 +123,7 @@ func decodeUTF8Int(r io.Reader) (n uint64, err error) {
 		n <<= 6
 		c, err := readByte(r)
 		if err != nil {
-			if err == io.EOF {
+			if errors.Cause(err) == io.EOF {
 				return 0, io.ErrUnexpectedEOF
 			}
 			return 0, errors.WithStack(err)

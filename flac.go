@@ -69,7 +69,7 @@ func New(r io.Reader) (stream *Stream, err error) {
 	// Skip the remaining metadata blocks.
 	for !isLast {
 		block, err := meta.New(br)
-		if err != nil && err != meta.ErrReservedType {
+		if err != nil && errors.Cause(err) != meta.ErrReservedType {
 			return stream, errors.WithStack(err)
 		}
 		if err = block.Skip(); err != nil {
@@ -171,7 +171,7 @@ func Parse(r io.Reader) (stream *Stream, err error) {
 	for !isLast {
 		block, err := meta.Parse(br)
 		if err != nil {
-			if err != meta.ErrReservedType {
+			if errors.Cause(err) != meta.ErrReservedType {
 				return stream, errors.WithStack(err)
 			}
 			// Skip the body of unknown (reserved) metadata blocks, as stated by

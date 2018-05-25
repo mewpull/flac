@@ -203,7 +203,7 @@ func (t Type) String() string {
 // unexpected returns io.ErrUnexpectedEOF if err is io.EOF, and returns err
 // otherwise.
 func unexpected(err error) error {
-	if err == io.EOF {
+	if errors.Cause(err) == io.EOF {
 		return io.ErrUnexpectedEOF
 	}
 	return errors.WithStack(err)

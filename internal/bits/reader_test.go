@@ -622,7 +622,8 @@ func TestReadEOF(t *testing.T) {
 
 	for i, test := range tests {
 		r := NewReader(bytes.NewReader(test.data))
-		if _, err := r.Read(test.n); err != test.err {
+		_, e := r.Read(test.n)
+		if err := errors.Cause(e); err != test.err {
 			t.Errorf("i=%d; Reading %d from %v, expected err=%s, got err=%s", i, test.n, test.data, test.err, err)
 		}
 	}

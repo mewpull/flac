@@ -46,7 +46,7 @@ func ExampleOpen() {
 		// subframe per audio channel.
 		frame, err := stream.ParseNext()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Cause(err) == io.EOF {
 				break
 			}
 			log.Fatal(err)
