@@ -1,6 +1,6 @@
 language: go
 go:
-  - 1.7.1
+  - stable
 
 notifications:
   email: false
@@ -11,10 +11,11 @@ env:
     - PATH=$HOME/gopath/bin:$PATH
 
 before_install:
-  - go get golang.org/x/tools/cmd/cover
-  - go get golang.org/x/tools/cmd/goimports
-  - go get github.com/golang/lint/golint
-  - go get github.com/mattn/goveralls
+  - go get -u golang.org/x/tools/cmd/cover
+  - go get -u golang.org/x/tools/cmd/goimports
+  - go get -u github.com/golang/lint/golint
+  - go get -u github.com/mattn/goveralls
+  - go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
   - sudo apt-get -qq update
   - sudo apt-get -y install libpulse-dev
 
@@ -27,3 +28,6 @@ before_script:
 
 script:
   - ./goclean.sh
+  - golangci-lint run --enable-all --disable maligned --exclude "(G501:|Error return value of .md5sum\.Write. is not checked)"
+
+# skip G501: Import blacklist: crypto/md5
