@@ -83,7 +83,7 @@ func TestEncodeComment(t *testing.T) {
 		t.Fatalf("unable to encode FLAC file; %v", err)
 	}
 
-	stream, err := flac.Parse(bytes.NewReader(out.Bytes()))
+	stream, err := flac.Parse(out)
 	if err != nil {
 		t.Fatalf("unable to parse output FLAC file; %v", err)
 	}

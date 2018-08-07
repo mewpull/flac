@@ -22,9 +22,12 @@
 package flac
 
 import (
+	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 
 	"github.com/mewkiz/flac/frame"
@@ -42,7 +45,9 @@ type Stream struct {
 	// Zero or more metadata blocks.
 	Blocks []*meta.Block
 	// Underlying io.Reader.
-	r io.ReadSeeker
+	r io.Reader
+	// Underlying io.ReadSeeker; or nil if not present.
+	rs io.ReadSeeker
 	// Underlying io.Closer of file if opened with Open and ParseFile, and nil
 	// otherwise.
 	c io.Closer
@@ -56,9 +61,14 @@ type Stream struct {
 //
 // Call Stream.Next to parse the frame header of the next audio frame, and call
 // Stream.ParseNext to parse the entire next frame including audio samples.
-func New(r io.ReadSeeker) (stream *Stream, err error) {
+func New(r io.Reader) (stream *Stream, err error) {
 	// Verify FLAC signature and parse the StreamInfo metadata block.
+	//br := bufio.NewReader(r)
+	//stream = &Stream{r: br}
 	stream = &Stream{r: r}
+	if rs, ok := r.(io.ReadSeeker); ok {
+		stream.rs = rs
+	}
 	isLast, err := stream.parseStreamInfo()
 	if err != nil {
 		return nil, err
@@ -66,6 +76,7 @@ func New(r io.ReadSeeker) (stream *Stream, err error) {
 
 	// Skip the remaining metadata blocks.
 	for !isLast {
+		//block, err := meta.New(br)
 		block, err := meta.New(r)
 		if err != nil && err != meta.ErrReservedType {
 			return stream, err
@@ -76,6 +87,15 @@ func New(r io.ReadSeeker) (stream *Stream, err error) {
 		isLast = block.IsLast
 	}
 
+	// TODO: figure out how to use buffered reader, without reading "too far"
+	// when storing the offset after the first frame header.
+
+	// Store offset to first frame header.
+	//if stream.rs != nil {
+	//	if err := stream.storeFirstFrameOffset(); err != nil {
+	//		return nil, err
+	//	}
+	//}
 	return stream, nil
 }
 
@@ -128,23 +148,24 @@ func (stream *Stream) parseStreamInfo() (isLast bool, err error) {
 
 // skipID3v2 skips ID3v2 data prepended to flac files.
 func (stream *Stream) skipID3v2() error {
-	r := bufio.NewReader(stream.r)
-
 	// Discard unnecessary data from the ID3v2 header.
-	if _, err := r.Discard(2); err != nil {
+	if _, err := io.CopyN(ioutil.Discard, stream.r, 2); err != nil {
 		return err
 	}
 
 	// Read the size from the ID3v2 header.
 	var sizeBuf [4]byte
-	if _, err := r.Read(sizeBuf[:]); err != nil {
+	if _, err := io.ReadFull(stream.r, sizeBuf[:]); err != nil {
 		return err
 	}
 	// The size is encoded as a synchsafe integer.
-	size := int(sizeBuf[0])<<21 | int(sizeBuf[1])<<14 | int(sizeBuf[2])<<7 | int(sizeBuf[3])
+	size := int64(sizeBuf[0])<<21 | int64(sizeBuf[1])<<14 | int64(sizeBuf[2])<<7 | int64(sizeBuf[3])
 
-	_, err := r.Discard(size)
-	return err
+	// Skip remaining ID3v2 header.
+	if _, err := io.CopyN(ioutil.Discard, stream.r, size); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Parse creates a new Stream for accessing the metadata blocks and audio
@@ -152,9 +173,14 @@ func (stream *Stream) skipID3v2() error {
 //
 // Call Stream.Next to parse the frame header of the next audio frame, and call
 // Stream.ParseNext to parse the entire next frame including audio samples.
-func Parse(r io.ReadSeeker) (stream *Stream, err error) {
+func Parse(r io.Reader) (stream *Stream, err error) {
 	// Verify FLAC signature and parse the StreamInfo metadata block.
+	//br := bufio.NewReader(r)
+	//stream = &Stream{r: br}
 	stream = &Stream{r: r}
+	if rs, ok := r.(io.ReadSeeker); ok {
+		stream.rs = rs
+	}
 	isLast, err := stream.parseStreamInfo()
 	if err != nil {
 		return nil, err
@@ -162,6 +188,7 @@ func Parse(r io.ReadSeeker) (stream *Stream, err error) {
 
 	// Parse the remaining metadata blocks.
 	for !isLast {
+		//block, err := meta.Parse(br)
 		block, err := meta.Parse(r)
 		if err != nil {
 			if err != meta.ErrReservedType {
@@ -179,14 +206,12 @@ func Parse(r io.ReadSeeker) (stream *Stream, err error) {
 		isLast = block.IsLast
 	}
 
-	pos, err := r.Seek(0, io.SeekCurrent)
-	if err != nil {
-		return nil, err
-	}
-	stream.firstFrameHeader = pos
-	if _, err = r.Seek(pos, io.SeekStart); err != nil {
-		return nil, err
-	}
+	// Store offset to first frame header.
+	//if stream.rs != nil {
+	//	if err := stream.storeFirstFrameOffset(); err != nil {
+	//		return nil, err
+	//	}
+	//}
 	return stream, nil
 }
 
@@ -255,50 +280,37 @@ func (stream *Stream) ParseNext() (f *frame.Frame, err error) {
 	return frame.Parse(stream.r)
 }
 
-// Seek seeks to the audio frame containing the specified sample number.
-func (stream *Stream) Seek(offset int64, whence int) error {
-	// Calculate target sample number.
-	nsamples := int64(stream.Info.NSamples)
-	var sample int64
-	switch whence {
-	case io.SeekStart:
-		sample = 0 + offset
-	case io.SeekCurrent:
-		frame, err := stream.ParseNext()
-		if err != nil {
-			return err
-		}
-		var cur int64
-		if frame.HasFixedBlockSize {
-			cur = int64(frame.Num) * int64(frame.BlockSize)
-		} else {
-			cur = int64(frame.Num)
-		}
-		sample = cur + offset
-		fmt.Println("current sample:", cur)
-	case io.SeekEnd:
-		sample = nsamples + offset
-	default:
-		panic(fmt.Errorf("unknown whence %d", whence))
+// TODO: rename to Seek?
+
+// SeekSample seeks to the start of the audio frame containing the specified
+// sample number.
+func (stream *Stream) SeekSample(sample int64) error {
+	if stream.rs == nil {
+		return errors.New("flac.Stream.SeekSample: reader of FLAC stream does not implement io.Seeker")
 	}
-	if sample < 0 {
-		sample = 0
-	}
-	if sample > nsamples {
-		sample = nsamples
-	}
-	fmt.Println("seeking after sample:", sample)
-	// Seek to target sample number.
-	if _, err := stream.r.Seek(stream.firstFrameHeader, io.SeekStart); err != nil {
+
+	// Seek to the first sample and search for the target sample number.
+	if _, err := stream.rs.Seek(stream.firstFrameHeader, io.SeekStart); err != nil {
 		return err
 	}
 	i := int64(0)
+	// TODO: optimize. Currently reads from the start of the file every time.
 	for {
+		// Store seeker position before parsing frame.
+		framePos, err := stream.rs.Seek(0, io.SeekCurrent)
+		if err != nil {
+			return err
+		}
+		// Reset buffered reader after seek and before parsing frame.
+		//stream.r = bufio.NewReader(stream.rs)
+		stream.r = stream.rs
 		frame, err := stream.ParseNext()
 		if err != nil {
 			return err
 		}
 		var sampleStart, sampleEnd int64
+		// Calculate the start sample number of the frame.
+		//
 		// frame.Num specifies the frame number if the block size is fixed, and
 		// the first sample number in the frame otherwise.
 		if frame.HasFixedBlockSize {
@@ -307,7 +319,15 @@ func (stream *Stream) Seek(offset int64, whence int) error {
 			sampleStart = int64(frame.Num)
 		}
 		sampleEnd = sampleStart + int64(frame.BlockSize)
-		if sample >= sampleStart && sample < sampleEnd {
+		if sampleStart <= sample && sample < sampleEnd {
+			// Reset position to the start of the frame containing the sample
+			// number.
+			if _, err := stream.rs.Seek(framePos, io.SeekStart); err != nil {
+				return err
+			}
+			// Reset buffered reader after seek.
+			//stream.r = bufio.NewReader(stream.rs)
+			stream.r = stream.rs
 			break
 		}
 		i += int64(frame.BlockSize)
@@ -315,9 +335,17 @@ func (stream *Stream) Seek(offset int64, whence int) error {
 	return nil
 }
 
-// TODO: Consider changing the signature of Seek to:
-//    func (stream *Stream) Seek(sample, whence int) error
-
-// , relative to whence: io.SeekStart means relative to the start of the audio
-// stream, io.SeekCurrent means relative to the current sample, and io.SeekEnd
-// means relative to the end of the audio stream.
+// storeFirstFrameOffset stores the offset to the first frame header.
+func (stream *Stream) storeFirstFrameOffset() error {
+	pos, err := stream.rs.Seek(0, io.SeekCurrent)
+	if err != nil {
+		return err
+	}
+	stream.firstFrameHeader = pos
+	if _, err = stream.rs.Seek(pos, io.SeekStart); err != nil {
+		return err
+	}
+	// Reset buffered reader after seek.
+	stream.r = bufio.NewReader(stream.rs)
+	return nil
+}
